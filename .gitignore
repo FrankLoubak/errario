@@ -1,0 +1,63 @@
+# ─── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Build outputs ────────────────────────────────────────────────────────────
+dist/
+build/
+.next/
+
+# ─── Variáveis de ambiente — NUNCA commitar ────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+mobile/.env
+
+# ─── Prisma ───────────────────────────────────────────────────────────────────
+backend/prisma/migrations/*.sql
+
+# ─── Expo / React Native ──────────────────────────────────────────────────────
+.expo/
+.expo-shared/
+mobile/ios/
+mobile/android/
+mobile/web-build/
+mobile/.tamagui/
+
+# ─── Credenciais das Lojas ────────────────────────────────────────────────────
+# Estes arquivos nunca devem ir para o repositório
+mobile/google-play-service-account.json
+*.p8
+*.p12
+*.mobileprovision
+GoogleService-Info.plist
+google-services.json
+
+# ─── Testes e Coverage ────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+backend/.env.production
+
+# ─── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ─── VSCode ───────────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ─── JetBrains ────────────────────────────────────────────────────────────────
+.idea/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/

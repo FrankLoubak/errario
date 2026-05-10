@@ -1,0 +1,250 @@
+// Errário v10 - Prisma Schema
+// Banco: PostgreSQL 15
+// Gerado via: npx prisma generate
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Tier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum StorageMode {
+  LOCAL  // dados apenas no SQLite do device (Free)
+  CLOUD  // dados no PostgreSQL VPS (Pro)
+}
+
+enum TransactionType {
+  PURCHASE
+  USAGE
+  REFUND
+}
+
+enum NoteStatus {
+  active
+  archived
+  deleted
+}
+
+enum Platform {
+  ios
+  android
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  passwordHash  String?
+  name          String?
+  picture       String?
+
+  tier          Tier        @default(FREE)
+  storageMode   StorageMode @default(LOCAL)
+  credits       Int         @default(0)
+
+  emailVerified     Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+
+  googleId      String?  @unique
+  iapAppleToken String?
+  iapGoogleToken String?
+
+  stripeCustomerId  String?  @unique
+
+  upgradedToCloudAt DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  notes              Note[]
+  plannerCards       PlannerCard[]
+  creditTransactions CreditTransaction[]
+  sessions           Session[]
+  devices            UserDevice[]
+
+  @@index([email])
+  @@index([tier])
+  @@index([googleId])
+}
+
+// ─────────────────────────────────────────────
+// SESSION (Refresh tokens)
+// ─────────────────────────────────────────────
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshToken String   @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// ─────────────────────────────────────────────
+// NOTE
+// ─────────────────────────────────────────────
+
+model Note {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Campos de origem (para deduplicação na migração SQLite → Cloud)
+  localId          String?  @unique
+  deviceId         String?
+  migratedFromLocal Boolean @default(false)
+
+  title    String
+  body     String
+  subject  String
+  tags     String[]
+  favorite Boolean    @default(false)
+  status   NoteStatus @default(active)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews     ReviewDate[]
+  plannerCards PlannerCard[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, subject])
+  @@index([userId, status])
+  @@index([localId])
+}
+
+// ─────────────────────────────────────────────
+// REVIEW DATE (Spaced repetition)
+// ─────────────────────────────────────────────
+
+model ReviewDate {
+  id      String @id @default(cuid())
+  noteId  String
+  note    Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  dueDate DateTime
+  done    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([noteId])
+  @@index([dueDate])
+}
+
+// ─────────────────────────────────────────────
+// PLANNER CARD
+// ─────────────────────────────────────────────
+
+model PlannerCard {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  noteId String
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  assignedDay Int     // 0 = Segunda … 6 = Domingo
+  completed   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, assignedDay])
+}
+
+// ─────────────────────────────────────────────
+// CREDIT TRANSACTION
+// ─────────────────────────────────────────────
+
+model CreditTransaction {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount    Int
+  type      TransactionType
+  reference String?  // apple_transaction_id ou google_purchase_token
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────
+// STRIPE EVENT (webhook idempotency log — para web futuro)
+// ─────────────────────────────────────────────
+
+model StripeEvent {
+  id         String   @id @default(cuid())
+  stripeId   String   @unique
+  type       String
+  data       Json
+  processed  Boolean  @default(false)
+  processedAt DateTime?
+
+  createdAt  DateTime @default(now())
+
+  @@index([processed])
+  @@index([stripeId])
+}
+
+// ─────────────────────────────────────────────
+// USER DEVICE (Push notifications — FCM/APNs)
+// ─────────────────────────────────────────────
+
+model UserDevice {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token    String   @unique
+  platform Platform
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// EMAIL LOG (auditoria de emails enviados)
+// ─────────────────────────────────────────────
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  userId      String
+  emailType   String   // welcome, engagement, update, verification
+  sequenceId  String?
+  emailNumber Int?
+
+  sentAt      DateTime @default(now())
+  openedAt    DateTime?
+  clickedAt   DateTime?
+
+  @@index([userId])
+  @@index([emailType])
+}
