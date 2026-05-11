@@ -38,6 +38,30 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
 // ─────────────────────────────────────────────
+// Google OAuth — URL de autorização
+// ─────────────────────────────────────────────
+
+// redirect_uri = deep link do app (interceptado pelo WebBrowser.openAuthSessionAsync)
+// Deve ser registrado exatamente assim no Google Cloud Console como URI autorizado
+const GOOGLE_MOBILE_REDIRECT_URI = 'com.errario.app://auth/callback';
+
+export function buildGoogleAuthUrl(): string {
+  if (!env.GOOGLE_CLIENT_ID) {
+    throw new Error('GOOGLE_CLIENT_ID não configurada');
+  }
+
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.searchParams.set('client_id', env.GOOGLE_CLIENT_ID);
+  url.searchParams.set('redirect_uri', GOOGLE_MOBILE_REDIRECT_URI);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', 'openid email profile');
+  url.searchParams.set('access_type', 'offline');
+  url.searchParams.set('prompt', 'select_account');
+
+  return url.toString();
+}
+
+// ─────────────────────────────────────────────
 // Funções auxiliares
 // ─────────────────────────────────────────────
 
@@ -214,7 +238,7 @@ export async function loginWithGoogleCode(code: string): Promise<{
       code,
       client_id: env.GOOGLE_CLIENT_ID ?? '',
       client_secret: env.GOOGLE_CLIENT_SECRET ?? '',
-      redirect_uri: 'com.errario.app:/auth/callback',
+      redirect_uri: GOOGLE_MOBILE_REDIRECT_URI,
       grant_type: 'authorization_code',
     }),
   });

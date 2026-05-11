@@ -5,6 +5,7 @@ import {
   refreshTokens,
   logout,
   loginWithGoogleCode,
+  buildGoogleAuthUrl,
   registerSchema,
   loginSchema,
   refreshSchema,
@@ -144,4 +145,12 @@ export async function handleGoogleMobileCallback(
   } catch (error) {
     next(error);
   }
+}
+
+// Redireciona o browser para o consent screen do Google (fluxo mobile)
+// O app mobile abre este URL via WebBrowser.openAuthSessionAsync e intercepta
+// o redirect de volta ao deep link: errario://auth/callback?code=xxx
+export function handleGoogleRedirect(_req: Request, res: Response): void {
+  const authUrl = buildGoogleAuthUrl();
+  res.redirect(authUrl);
 }

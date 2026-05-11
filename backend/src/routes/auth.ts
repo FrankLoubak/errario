@@ -6,6 +6,7 @@ import {
   handleLogout,
   handleMe,
   handleGoogleMobileCallback,
+  handleGoogleRedirect,
 } from '../controllers/authController';
 import { authMiddleware } from '../middleware/auth';
 import { loginLimiter, registerLimiter } from '../middleware/rateLimiter';
@@ -18,7 +19,11 @@ authRouter.post('/register', registerLimiter, handleRegister);
 // Login com email/senha
 authRouter.post('/login', loginLimiter, handleLogin);
 
-// OAuth Google — mobile deep link (app envia o authorization code)
+// OAuth Google — inicia o fluxo: redireciona para o consent screen do Google
+// O app mobile abre via WebBrowser.openAuthSessionAsync e intercepta o deep link de retorno
+authRouter.get('/google', loginLimiter, handleGoogleRedirect);
+
+// OAuth Google — mobile deep link: app envia o authorization code recebido do Google
 authRouter.post('/google/mobile', loginLimiter, handleGoogleMobileCallback);
 
 // Renovação do access token via refresh token
