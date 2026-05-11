@@ -119,29 +119,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (Easypanel)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/errario
+            # Easypanel gerencia o container — atualiza a imagem e reinicia o serviço.
+            # O Traefik do Easypanel cuida do SSL/proxy; não usamos docker-compose diretamente.
 
-            # Atualiza a imagem
+            # 1. Puxa a nova imagem
             docker pull ${{ secrets.DOCKER_USERNAME }}/errario-backend:latest
 
-            # Executa migrations antes do deploy
+            # 2. Executa migrations via container temporário (conecta na rede do Easypanel)
             docker run --rm \
-              --env-file .env.production \
+              --network errario_default \
+              -e DATABASE_URL="${{ secrets.PROD_DATABASE_URL }}" \
               ${{ secrets.DOCKER_USERNAME }}/errario-backend:latest \
               npx prisma migrate deploy
 
-            # Reinicia o container com zero downtime
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --build api
+            # 3. Reinicia o container do Easypanel (nome do container: errario_api_1)
+            docker restart $(docker ps -q --filter "name=errario_api") || \
+              docker compose -f /etc/easypanel/projects/errario/docker-compose.yml up -d --no-deps api
 
-            # Health check
-            sleep 10
+            # 4. Health check (aguarda container inicializar)
+            sleep 15
             curl -f http://localhost:3001/api/health || exit 1
 
             echo "Deploy concluído: $(date)"

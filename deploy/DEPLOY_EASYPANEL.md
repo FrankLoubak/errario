@@ -173,6 +173,7 @@ Configure no GitHub: Settings → Secrets → Actions:
 | `VPS_HOST` | 187.77.255.90 |
 | `VPS_USER` | root |
 | `VPS_SSH_KEY` | Conteúdo da chave privada SSH (`~/.ssh/id_rsa`) |
+| `PROD_DATABASE_URL` | `postgresql://errario_user:SENHA@errario_db:5432/errario_prod` |
 | `EXPO_TOKEN` | Token do expo.dev (EAS Build) |
 
 Após configurar, cada push na `main` vai:
