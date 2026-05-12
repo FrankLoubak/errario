@@ -3,11 +3,22 @@ import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
 // Cria o transport uma única vez.
-// Em produção usa SendGrid SMTP; em dev/test usa Ethereal (preview no console).
+// Prioridade: Resend SMTP → SendGrid SMTP → jsonTransport (dev/test)
 function createTransport() {
   if (env.NODE_ENV === 'test') {
-    // Silencioso em testes — não envia nada
     return nodemailer.createTransport({ jsonTransport: true });
+  }
+
+  if (env.RESEND_API_KEY) {
+    return nodemailer.createTransport({
+      host: 'smtp.resend.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: 'resend',
+        pass: env.RESEND_API_KEY,
+      },
+    });
   }
 
   if (env.SENDGRID_API_KEY) {
@@ -21,8 +32,7 @@ function createTransport() {
     });
   }
 
-  // Dev sem SendGrid: loga o email no console (não envia)
-  logger.warn('SENDGRID_API_KEY não configurada — emails serão logados no console');
+  logger.warn('Nenhum provedor de email configurado — emails serão logados no console');
   return nodemailer.createTransport({ jsonTransport: true });
 }
 

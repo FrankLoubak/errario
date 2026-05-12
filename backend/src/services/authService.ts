@@ -45,7 +45,12 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 // redirect_uri = deep link do app (interceptado pelo WebBrowser.openAuthSessionAsync)
 // Deve ser registrado exatamente assim no Google Cloud Console como URI autorizado
-const GOOGLE_MOBILE_REDIRECT_URI = 'com.errario.app://auth/callback';
+// O redirect_uri registrado no Google Cloud Console (deve ser HTTPS para web OAuth).
+// O app mobile intercepta o redirect via WebBrowser.openAuthSessionAsync.
+const GOOGLE_MOBILE_REDIRECT_URI =
+  process.env.NODE_ENV === 'production'
+    ? 'https://api.errario.app/api/v1/auth/google/callback'
+    : 'com.errario.app://auth/callback';
 
 export function buildGoogleAuthUrl(): string {
   if (!env.GOOGLE_CLIENT_ID) {

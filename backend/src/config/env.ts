@@ -20,6 +20,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.string().optional(),
 
+  RESEND_API_KEY: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().email().default('noreply@errario.app'),
 
