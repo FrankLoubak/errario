@@ -1,0 +1,130 @@
+version: '3.9'
+
+# ─── Docker Compose — Produção (VPS Hostinger) ──────────────────────────────────
+# Uso: docker-compose -f docker-compose.prod.yml up -d
+# Pré-requisito: arquivo .env.production preenchido na raiz do projeto
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: errario_api
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://errario_user:${POSTGRES_PASSWORD}@db:5432/errario_prod
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - errario_net
+    # Limites de recursos — VPS KVM 2 (4GB RAM / 2 vCPU)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', r => r.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  db:
+    image: postgres:15-alpine
+    container_name: errario_db
+    restart: always
+    environment:
+      POSTGRES_USER: errario_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: errario_prod
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./scripts/backup:/backups
+    networks:
+      - errario_net
+    # PostgreSQL — reserva generosa para queries
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U errario_user -d errario_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: errario_redis
+    restart: always
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save 60 1
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - errario_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 300M
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: errario_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - api
+    networks:
+      - errario_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+
+  # Renovação automática de certificado SSL
+  certbot:
+    image: certbot/certbot:latest
+    container_name: errario_certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
+
+networks:
+  errario_net:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  certbot_www:
