@@ -3,6 +3,7 @@ import { env } from './config/env';
 import { createApp } from './app';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { connectRedis, redis } from './config/redis';
+import { startScheduler } from './jobs/scheduler';
 import { logger } from './utils/logger';
 
 if (env.SENTRY_DSN) {
@@ -16,6 +17,7 @@ if (env.SENTRY_DSN) {
 async function bootstrap(): Promise<void> {
   await connectDatabase();
   await connectRedis();
+  await startScheduler();
 
   const app = createApp();
 

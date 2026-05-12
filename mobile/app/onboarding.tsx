@@ -1,13 +1,22 @@
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../hooks/useAuth';
+import { registerForPushNotifications } from '../hooks/usePushNotifications';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const firstName = user?.name?.split(' ')[0] ?? 'Estudante';
+
+  async function handleStart() {
+    setLoading(true);
+    await registerForPushNotifications().catch(() => null);
+    router.replace('/(tabs)');
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
@@ -51,10 +60,15 @@ export default function OnboardingScreen() {
         {/* CTA */}
         <TouchableOpacity
           className="bg-primary-600 rounded-2xl py-4 items-center"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={handleStart}
           activeOpacity={0.85}
+          disabled={loading}
         >
-          <Text className="text-white font-bold text-lg">Começar a usar</Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-white font-bold text-lg">Começar a usar</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

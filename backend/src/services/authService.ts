@@ -10,6 +10,7 @@ import {
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { sendWelcomeEmail } from './emailService';
+import { scheduleOnboardingSequence } from '../jobs/emailSequenceWorker';
 import type { TokenPair } from '../types';
 
 // ─────────────────────────────────────────────
@@ -114,8 +115,9 @@ export async function register(input: RegisterInput): Promise<{
 
   const tokens = await buildTokenPair(user.id, user.email, user.tier, user.storageMode);
 
-  // Fire-and-forget: não bloqueia a resposta se o email falhar
+  // Fire-and-forget — falhas de email/fila não bloqueiam a resposta
   sendWelcomeEmail(user.email, user.name ?? user.email).catch(() => null);
+  scheduleOnboardingSequence(user.id, user.email, user.name ?? '').catch(() => null);
 
   return { user: { id: user.id, email: user.email, name: user.name }, tokens };
 }
@@ -294,6 +296,7 @@ export async function loginWithGoogleCode(code: string): Promise<{
     });
     logger.info('Novo usuário via Google OAuth', { userId: user.id });
     sendWelcomeEmail(user.email, user.name ?? user.email).catch(() => null);
+    scheduleOnboardingSequence(user.id, user.email, user.name ?? '').catch(() => null);
   } else if (!user.googleId) {
     // Vincula conta existente ao Google ID
     await prisma.user.update({

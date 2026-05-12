@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 import { useAuthStore } from '../store/authStore';
+import { usePushNotificationListener } from '../hooks/usePushNotifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +20,8 @@ const queryClient = new QueryClient({
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
   const { setColorScheme } = useColorScheme();
+
+  usePushNotificationListener();
 
   useEffect(() => {
     initialize();
@@ -35,6 +38,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="upgrade" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="profile" />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>
