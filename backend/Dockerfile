@@ -1,6 +1,9 @@
 # ─── Estágio 1: Build ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
+# Prisma exige OpenSSL — Alpine não instala por padrão
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -18,7 +21,9 @@ RUN npm run build
 # ─── Estágio 2: Produção ──────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
-RUN addgroup --system --gid 1001 nodejs && \
+# Prisma exige OpenSSL em runtime também
+RUN apk add --no-cache openssl libc6-compat && \
+    addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 errario
 
 WORKDIR /app
