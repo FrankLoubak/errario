@@ -6,6 +6,7 @@ import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authRouter } from './routes/auth';
 import { notesRouter } from './routes/notes';
+import { plannerRouter } from './routes/planner';
 import { billingRouter } from './routes/billing';
 import { usersRouter } from './routes/users';
 import { logger } from './utils/logger';
@@ -49,6 +50,7 @@ export function createApp(): express.Application {
 
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/notes', notesRouter);
+  app.use('/api/v1/planner', plannerRouter);
   app.use('/api/v1/billing', billingRouter);
   app.use('/api/v1/users', usersRouter);
 
