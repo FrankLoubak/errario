@@ -21,7 +21,7 @@ export async function handleValidateApple(
     await validateAppleIAP(req.user.id, input);
     res.json({ success: true, message: 'Assinatura Pro ativada' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 }
 
@@ -35,7 +35,7 @@ export async function handleValidateGoogle(
     await validateGoogleIAP(req.user.id, input);
     res.json({ success: true, message: 'Assinatura Pro ativada' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 }
 
@@ -48,7 +48,7 @@ export async function handleGetBillingSession(
     const session = await getBillingSession(req.user.id);
     res.json({ success: true, data: session });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 }
 

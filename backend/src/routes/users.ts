@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { deviceLimiter } from '../middleware/rateLimiter';
@@ -11,12 +11,6 @@ export const usersRouter = Router();
 
 usersRouter.use(authMiddleware as never);
 
-// ─────────────────────────────────────────────
-// POST /api/v1/users/me/device
-// Rate limited — previne spam de registro de tokens
-// Registra ou atualiza o Expo push token do device atual
-// ─────────────────────────────────────────────
-
 const deviceSchema = z.object({
   token: z.string().min(1, 'Token é obrigatório').max(500),
   platform: z.enum(['ios', 'android']),
@@ -25,50 +19,35 @@ const deviceSchema = z.object({
 usersRouter.post(
   '/me/device',
   deviceLimiter,
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req as AuthenticatedRequest;
     try {
       const { token, platform } = deviceSchema.parse(req.body);
-
-      // Upsert: token único — atualiza o userId se o device mudou de conta
       await prisma.userDevice.upsert({
         where: { token },
-        create: { userId: req.user.id, token, platform },
-        update: { userId: req.user.id, platform },
+        create: { userId: user.id, token, platform },
+        update: { userId: user.id, platform },
       });
-
       res.json({ success: true });
     } catch (error) {
       next(error);
     }
   }
 );
-
-// ─────────────────────────────────────────────
-// DELETE /api/v1/users/me/device
-// Remove o token do device atual (logout)
-// ─────────────────────────────────────────────
 
 usersRouter.delete(
   '/me/device',
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req as AuthenticatedRequest;
     try {
       const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
-
-      await prisma.userDevice.deleteMany({
-        where: { userId: req.user.id, token },
-      });
-
+      await prisma.userDevice.deleteMany({ where: { userId: user.id, token } });
       res.json({ success: true });
     } catch (error) {
       next(error);
     }
   }
 );
-
-// ─────────────────────────────────────────────
-// PATCH /api/v1/users/me
-// Atualiza nome do perfil
-// ─────────────────────────────────────────────
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
@@ -76,46 +55,38 @@ const updateProfileSchema = z.object({
 
 usersRouter.patch(
   '/me',
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req as AuthenticatedRequest;
     try {
       const input = updateProfileSchema.parse(req.body);
-
-      const user = await prisma.user.update({
-        where: { id: req.user.id },
+      const updated = await prisma.user.update({
+        where: { id: user.id },
         data: input,
         select: { id: true, email: true, name: true, tier: true, storageMode: true, credits: true },
       });
-
-      res.json({ success: true, data: { user } });
+      res.json({ success: true, data: { user: updated } });
     } catch (error) {
       next(error);
     }
   }
 );
 
-// ─────────────────────────────────────────────
-// DELETE /api/v1/users/me
-// Exclusão de conta (LGPD/GDPR)
-// ─────────────────────────────────────────────
-
 usersRouter.delete(
   '/me',
-  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user } = req as AuthenticatedRequest;
     try {
       const { confirm } = z.object({ confirm: z.literal('EXCLUIR') }).parse(req.body);
       if (!confirm) throw new AppError(400, 'Confirmação inválida');
 
-      // Soft delete via flag — mantém dados por 30 dias antes de purge (compliance)
       await prisma.user.update({
-        where: { id: req.user.id },
-        data: { email: `deleted+${req.user.id}@errario.app`, name: 'Conta excluída' },
+        where: { id: user.id },
+        data: { email: `deleted+${user.id}@errario.app`, name: 'Conta excluída' },
       });
-
       await prisma.session.updateMany({
-        where: { userId: req.user.id, revokedAt: null },
+        where: { userId: user.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-
       res.json({ success: true, message: 'Conta excluída' });
     } catch (error) {
       next(error);

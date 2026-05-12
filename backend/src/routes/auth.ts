@@ -33,4 +33,4 @@ authRouter.post('/refresh', handleRefresh);
 authRouter.post('/logout', handleLogout);
 
 // Dados do usuário autenticado
-authRouter.get('/me', authMiddleware as never, handleMe);
+authRouter.get('/me', authMiddleware as never, handleMe as never);
