@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth';
 import { notesRouter } from './routes/notes';
 import { plannerRouter } from './routes/planner';
 import { billingRouter } from './routes/billing';
+import { migrationRouter } from './routes/migration';
 import { usersRouter } from './routes/users';
 import { logger } from './utils/logger';
 
@@ -52,6 +53,7 @@ export function createApp(): express.Application {
   app.use('/api/v1/notes', notesRouter);
   app.use('/api/v1/planner', plannerRouter);
   app.use('/api/v1/billing', billingRouter);
+  app.use('/api/v1/migrations', migrationRouter);
   app.use('/api/v1/users', usersRouter);
 
   app.use(notFoundHandler);

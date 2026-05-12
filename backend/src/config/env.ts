@@ -32,8 +32,13 @@ const envSchema = z.object({
 
   APPLE_BUNDLE_ID: z.string().default('com.errario.app'),
   APPLE_SHARED_SECRET: z.string().optional(),
+  // App Store Connect API — necessário para validação IAP StoreKit 2
+  APPLE_KEY_ID: z.string().optional(),             // Key ID do App Store Connect
+  APPLE_ISSUER_ID: z.string().optional(),          // Issuer ID do App Store Connect
+  APPLE_PRIVATE_KEY: z.string().optional(),        // Conteúdo do arquivo .p8 (PEM)
 
   GOOGLE_PLAY_PACKAGE_NAME: z.string().default('com.errario.app'),
+  // JSON string da service account key do Google Cloud Console
   GOOGLE_PLAY_SERVICE_ACCOUNT_KEY: z.string().optional(),
 });
 
