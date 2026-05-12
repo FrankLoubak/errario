@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import { register, login, refreshTokens, logout } from '../services/authService';
-import type { AppError as _AppError } from '../middleware/errorHandler';
 import * as jwtUtils from '../utils/jwt';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
