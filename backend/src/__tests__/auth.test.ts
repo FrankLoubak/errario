@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { register, login, refreshTokens, logout } from '../services/authService';
-import { AppError } from '../middleware/errorHandler';
+import type { AppError as _AppError } from '../middleware/errorHandler';
 import * as jwtUtils from '../utils/jwt';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -316,6 +316,7 @@ describe('logout()', () => {
 // ─── VALIDAÇÃO DE ENTRADA ─────────────────────────────────────────────────────
 
 describe('registerSchema validação', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { registerSchema } = require('../services/authService');
 
   it('aceita email, password e name válidos', () => {

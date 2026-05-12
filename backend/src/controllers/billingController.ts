@@ -14,7 +14,7 @@ import { logger } from '../utils/logger';
 export async function handleValidateApple(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void> {
   try {
     const input = validateAppleIAPSchema.parse(req.body);
@@ -28,7 +28,7 @@ export async function handleValidateApple(
 export async function handleValidateGoogle(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void> {
   try {
     const input = validateGoogleIAPSchema.parse(req.body);
@@ -42,7 +42,7 @@ export async function handleValidateGoogle(
 export async function handleGetBillingSession(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void> {
   try {
     const session = await getBillingSession(req.user.id);
@@ -56,7 +56,7 @@ export async function handleGetBillingSession(
 export async function handleAppleWebhook(
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void> {
   try {
     // Recebe o JWS diretamente no body (Content-Type: text/plain ou application/json)
@@ -74,7 +74,7 @@ export async function handleAppleWebhook(
 export async function handleGoogleWebhook(
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Promise<void> {
   try {
     await handleGoogleNotification(req.body as { message: { data: string } });

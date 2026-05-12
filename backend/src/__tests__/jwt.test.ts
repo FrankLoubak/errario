@@ -38,6 +38,7 @@ describe('generateAccessToken + verifyAccessToken', () => {
     const token = generateAccessToken(samplePayload);
 
     // Força um verify com secret diferente (simula adulteração)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const jwt = require('jsonwebtoken');
     expect(() =>
       jwt.verify(token, 'secret_errado')
@@ -45,6 +46,7 @@ describe('generateAccessToken + verifyAccessToken', () => {
   });
 
   it('lança erro ao verificar token expirado', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const jwt = require('jsonwebtoken');
     const expiredToken = jwt.sign(samplePayload, 'test_jwt_secret_minimo_32_caracteres_aqui', {
       expiresIn: '-1s',

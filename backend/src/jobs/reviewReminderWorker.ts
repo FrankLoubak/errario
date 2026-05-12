@@ -39,7 +39,7 @@ reviewReminderQueue.process(async () => {
   for (const [userId, reviews] of byUser.entries()) {
     // Máximo 1 push por usuário por dia, mesmo com múltiplas revisões
     const first = reviews[0];
-    const title = reviews.length > 1
+    const _title = reviews.length > 1
       ? `${reviews.length} revisões agendadas! 📒`
       : 'Hora de revisar! 📒';
     const body = reviews.length > 1
