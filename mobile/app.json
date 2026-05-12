@@ -18,10 +18,20 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Usado para foto de perfil",
-        "NSPhotoLibraryUsageDescription": "Usado para foto de perfil"
+        "NSPhotoLibraryUsageDescription": "Usado para foto de perfil",
+        "NSUserNotificationUsageDescription": "Receba lembretes de revisão de erros no momento certo",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
         "com.apple.developer.in-app-payments": ["merchant.com.errario.app"]
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {
@@ -43,6 +53,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "@sentry/react-native/expo",
       [
         "expo-notifications",
         {
@@ -63,6 +74,7 @@
     "experiments": {
       "typedRoutes": true
     },
+    "privacy": "public",
     "extra": {
       "eas": {
         "projectId": "SUBSTITUA_PELO_SEU_EAS_PROJECT_ID"
@@ -71,7 +83,10 @@
         "development": "http://localhost:3001",
         "preview": "https://api.errario.app",
         "production": "https://api.errario.app"
-      }
+      },
+      "privacyPolicyUrl": "https://errario.app/privacidade",
+      "supportUrl": "https://errario.app/suporte",
+      "appStoreCategory": "EDUCATION"
     },
     "updates": {
       "url": "https://u.expo.dev/SUBSTITUA_PELO_SEU_EAS_PROJECT_ID",

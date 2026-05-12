@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useNotes } from '../../hooks/useNotes';
 import { useAppStateSync } from '../../hooks/useAppStateSync';
+import { useAuthStore } from '../../store/authStore';
 import { NoteCard } from '../../components/features/Notes/NoteCard';
 import { NoteEditorModal } from '../../components/features/Notes/NoteEditorModal';
 import { SkeletonNoteList } from '../../components/common/SkeletonBox';
@@ -10,16 +12,23 @@ import { ErrorState } from '../../components/common/ErrorState';
 import { EmptyState } from '../../components/common/EmptyState';
 import type { Note } from '../../types/note';
 
+const FREE_TIER_LIMIT = 100;
+
 export default function NotesScreen() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const [search, setSearch] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null | undefined>(undefined);
   const [isEditorOpen, setEditorOpen] = useState(false);
 
-  const { notes, isLoading, isError, refetch, createNote, updateNote, deleteNote, isCreating, isUpdating, sync } =
+  const { notes, total, isLoading, isError, refetch, createNote, updateNote, deleteNote, isCreating, isUpdating, sync } =
     useNotes();
 
   // Pro: sincroniza ao voltar ao app
   useAppStateSync(sync);
+
+  const isPro = user?.tier === 'PRO' || user?.tier === 'ENTERPRISE';
+  const atLimit = !isPro && total >= FREE_TIER_LIMIT;
 
   const filtered = search.trim()
     ? notes.filter(
@@ -31,6 +40,10 @@ export default function NotesScreen() {
     : notes;
 
   function openCreate() {
+    if (atLimit) {
+      router.push('/upgrade');
+      return;
+    }
     setSelectedNote(null);
     setEditorOpen(true);
   }
@@ -58,13 +71,29 @@ export default function NotesScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <Text className="text-2xl font-bold text-white">Meus Erros</Text>
           <TouchableOpacity
-            className="bg-primary-600 w-10 h-10 rounded-full items-center justify-center"
+            className={`w-10 h-10 rounded-full items-center justify-center ${atLimit ? 'bg-gray-700' : 'bg-primary-600'}`}
             onPress={openCreate}
             activeOpacity={0.8}
           >
             <Text className="text-white text-2xl leading-none">+</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Limite Free tier */}
+        {!isPro && total > 0 && (
+          <TouchableOpacity
+            className={`mb-3 rounded-xl px-3 py-2 flex-row items-center justify-between ${atLimit ? 'bg-red-500/15 border border-red-500/30' : 'bg-white/5'}`}
+            onPress={() => router.push('/upgrade')}
+            activeOpacity={0.8}
+          >
+            <Text className={`text-xs ${atLimit ? 'text-red-400 font-semibold' : 'text-gray-500'}`}>
+              {atLimit
+                ? 'Limite atingido — faça upgrade para continuar'
+                : `${total} / ${FREE_TIER_LIMIT} anotações (plano gratuito)`}
+            </Text>
+            <Text className="text-primary-400 text-xs font-medium">Pro →</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Busca */}
         <TextInput

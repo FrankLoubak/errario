@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
+import { deviceLimiter } from '../middleware/rateLimiter';
 import { prisma } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import type { AuthenticatedRequest } from '../types';
@@ -12,6 +13,7 @@ usersRouter.use(authMiddleware as never);
 
 // ─────────────────────────────────────────────
 // POST /api/v1/users/me/device
+// Rate limited — previne spam de registro de tokens
 // Registra ou atualiza o Expo push token do device atual
 // ─────────────────────────────────────────────
 
@@ -22,6 +24,7 @@ const deviceSchema = z.object({
 
 usersRouter.post(
   '/me/device',
+  deviceLimiter,
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const { token, platform } = deviceSchema.parse(req.body);

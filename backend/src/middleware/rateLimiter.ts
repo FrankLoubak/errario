@@ -60,3 +60,12 @@ export const billingLimiter = rateLimit({
   store: createRedisStore('billing'),
   message: { success: false, error: 'Limite de requisições de pagamento atingido' },
 });
+
+export const deviceLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisStore('device'),
+  message: { success: false, error: 'Limite de registros de device atingido' },
+});

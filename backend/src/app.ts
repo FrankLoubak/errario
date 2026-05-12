@@ -10,6 +10,8 @@ import { plannerRouter } from './routes/planner';
 import { billingRouter } from './routes/billing';
 import { migrationRouter } from './routes/migration';
 import { usersRouter } from './routes/users';
+import { prisma } from './config/database';
+import { redis } from './config/redis';
 import { logger } from './utils/logger';
 
 export function createApp(): express.Application {
@@ -45,8 +47,31 @@ export function createApp(): express.Application {
 
   app.use(globalLimiter);
 
-  app.get('/api/health', (_req, res) => {
-    res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/api/health', async (_req, res) => {
+    const checks: Record<string, 'ok' | 'error'> = { api: 'ok' };
+
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      checks.database = 'ok';
+    } catch {
+      checks.database = 'error';
+    }
+
+    try {
+      await redis.ping();
+      checks.redis = 'ok';
+    } catch {
+      checks.redis = 'error';
+    }
+
+    const allOk = Object.values(checks).every((v) => v === 'ok');
+    res.status(allOk ? 200 : 503).json({
+      success: allOk,
+      status: allOk ? 'ok' : 'degraded',
+      checks,
+      version: process.env.npm_package_version ?? '1.0.0',
+      timestamp: new Date().toISOString(),
+    });
   });
 
   app.use('/api/v1/auth', authRouter);

@@ -4,8 +4,16 @@ import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
+import * as Sentry from '@sentry/react-native';
 import { useAuthStore } from '../store/authStore';
 import { usePushNotificationListener } from '../hooks/usePushNotifications';
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: process.env.NODE_ENV === 'production',
+  tracesSampleRate: 0.2,
+  environment: process.env.NODE_ENV ?? 'development',
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
